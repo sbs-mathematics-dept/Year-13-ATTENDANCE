@@ -2,7 +2,7 @@
 
 Shared attendance register for Cambridge 9709 option groups at SBS International School Chiangmai.
 
-- **Statistics Group** — Mrs. Cheng (14 students)
+- **Statistics Group** — Mrs. Cheng (15 students)
 - **Mechanics Group** — Ms. Hanna (15 students, also A Level Physics)
 
 ## Files
@@ -29,12 +29,22 @@ Choose the date, group and lesson, then tap P, L, A or E for each student. Absen
 
 Set from **Edit schedule** on the register card. Default slots:
 
-| Group | Lessons |
-|---|---|
-| Statistics | Monday 10:30–11:30, Tuesday 10:35–12:30 |
-| Mechanics | Wednesday 14:30–15:25, Friday 14:30–15:25 |
+Taken from the Y13MATC timetable (Secondary Sixth Form), six periods a week:
 
-The schedule is saved in the sheet's *Settings* tab, so a change made by either teacher applies to both. Records already taken keep their original lesson time. Any date can also take an *Extra lesson* register.
+| Group | Lessons | Room |
+|---|---|---|
+| Statistics | Monday, Period 3, 10:35–11:30 | C394 |
+| Statistics | Tuesday, Period 3, 10:35–11:30 | C374 |
+| Statistics | Tuesday, Period 4, 11:35–12:30 | C374 |
+| Mechanics | Wednesday, Period 6, 14:30–15:25 | C394 |
+| Mechanics | Friday, Period 3, 10:35–11:30 | C370 |
+| Mechanics | Friday, Period 4, 11:35–12:30 | C174 |
+
+Each slot holds a period name, start and end time, and room. The schedule is saved in the sheet's *Settings* tab, so a change made by either teacher applies to both. Records already taken keep their original lesson time. Any date can also take an *Extra lesson* register.
+
+## Staying up to date
+
+The page reloads from the sheet on open, on every return to the tab, when the device comes back online, and every 30 seconds while it is in front of you. Responses are fetched with `cache: no-store`, so a stale copy is never used.
 
 ## Summary & export
 

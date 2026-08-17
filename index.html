@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A Level Mathematics — Attendance | SBS International School Chiangmai</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -186,8 +189,11 @@ tbody tr:hover{background:#FBFDFF}
 .schedgroup h3{font-size:16px;color:var(--navy);margin-bottom:10px}
 .slot{display:flex;gap:10px;align-items:center;margin-bottom:9px}
 .slot select,.slot input{font-family:inherit;font-size:14px;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--card);color:var(--text)}
-.slot select{flex:1 1 auto;min-width:0}
-.slot input{width:112px}
+.slot{flex-wrap:wrap}
+.slot select{flex:1 1 120px;min-width:0}
+.slot input[type=time]{width:108px}
+.slot input.period{width:96px}
+.slot input.room{width:82px}
 .slot button{appearance:none;border:1px solid var(--line);background:var(--card);border-radius:9px;width:38px;height:38px;cursor:pointer;color:var(--muted);font-size:16px;line-height:1}
 .slot button:hover{color:var(--absent);border-color:#EBD3CF}
 .dialogfoot{padding:16px 24px 22px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line)}
@@ -241,7 +247,7 @@ footer .dept{margin-top:8px;font-family:'Newsreader',serif;font-size:14px;color:
     <div class="titles">
       <div class="eyebrow">SBS International School Chiangmai · AY2026/27</div>
       <h1>A Level Mathematics — Attendance</h1>
-      <p>Cambridge 9709 · Statistics &amp; Mechanics option groups · 29 students</p>
+      <p>Cambridge 9709 · Statistics &amp; Mechanics option groups · 30 students</p>
     </div>
     <button class="badge" id="syncBadge" title="Refresh from the shared sheet">
       <span class="dot" id="dot"></span><span id="syncText">Connecting…</span>
@@ -373,7 +379,7 @@ const PULL_SECONDS = 30;
 const GROUPS = {
   stats: {
     label:'Statistics', teacher:'Mrs. Cheng', tag:null,
-    students:['Jack','Mike','Helen','Melody','Ton-Aor','Jerry Ge','Hans','Sam','Zwe','Raquel','Eleanor','Tashi','Eggsy','Benji']
+    students:['Jack','Mike','Helen','Melody','Ton-Aor','Jerry Ge','Hans','Sam','Zwe','Raquel','Eleanor','Tashi','Eggsy','Benji','Anudari']
   },
   mech: {
     label:'Mechanics', teacher:'Ms. Hanna', tag:'Also A Level Physics',
@@ -382,9 +388,18 @@ const GROUPS = {
 };
 /* editable weekly schedule — day 1 = Monday */
 const DEFAULT_SCHEDULE = {
-  stats:[{d:1,s:'10:30',e:'11:30'},{d:2,s:'10:35',e:'12:30'}],
-  mech: [{d:3,s:'14:30',e:'15:25'},{d:5,s:'14:30',e:'15:25'}]
+  stats:[
+    {d:1, p:'Period 3', s:'10:35', e:'11:30', r:'C394'},
+    {d:2, p:'Period 3', s:'10:35', e:'11:30', r:'C374'},
+    {d:2, p:'Period 4', s:'11:35', e:'12:30', r:'C374'}
+  ],
+  mech:[
+    {d:3, p:'Period 6', s:'14:30', e:'15:25', r:'C394'},
+    {d:5, p:'Period 3', s:'10:35', e:'11:30', r:'C370'},
+    {d:5, p:'Period 4', s:'11:35', e:'12:30', r:'C174'}
+  ]
 };
+const SCHEDULE_VERSION = 2;   // bump this if the default timetable changes
 const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const STATUSES = ['P','L','A','E'];
 const STATUS_NAME = {P:'Present',L:'Late',A:'Absent',E:'Excused'};
@@ -404,11 +419,18 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"
 
 /* ---------------- local cache ---------------- */
 function cacheSave(){ try{ localStorage.setItem(CACHE_KEY, JSON.stringify({data,queue,schedule})); }catch(e){} }
+function cacheSaveMeta(){ try{ localStorage.setItem(CACHE_KEY+'-sv', String(SCHEDULE_VERSION)); }catch(e){} }
 function cacheLoad(){
   try{
     const o = JSON.parse(localStorage.getItem(CACHE_KEY)||'null');
-    if(o){ data = o.data||data; queue = o.queue||[]; schedule = o.schedule||schedule; }
+    if(o){
+      data = o.data||data;
+      queue = o.queue||[];
+      const seen = Number(localStorage.getItem(CACHE_KEY+'-sv')||0);
+      if(o.schedule && seen >= SCHEDULE_VERSION) schedule = o.schedule;   // keep the teachers' own edits
+    }
   }catch(e){}
+  cacheSaveMeta();
 }
 
 /* ---------------- sync ---------------- */
@@ -420,7 +442,7 @@ function setSync(state,text){
 async function pull(){
   if(!API_URL) return;
   try{
-    const res = await fetch(API_URL + '?t=' + Date.now());
+    const res = await fetch(API_URL + '?t=' + Date.now(), {cache:'no-store'});
     const j = await res.json();
     if(!j.ok) throw 0;
     const fresh = {stats:{},mech:{}};
@@ -470,13 +492,15 @@ function slotsFor(g, iso){
   const wd = weekday(iso);
   return (schedule[g]||[]).filter(x => Number(x.d) === wd).sort((a,b)=>a.s.localeCompare(b.s));
 }
+function slotAt(g, iso, key){ return slotsFor(g,iso).find(x => x.s === key) || null; }
 function lessonLabel(g, iso, key){
-  const slot = slotsFor(g,iso).find(x => x.s === key);
-  return slot ? slot.s + '–' + slot.e : (key === 'extra' ? 'Extra lesson' : key);
+  const slot = slotAt(g,iso,key);
+  if(!slot) return key === 'extra' ? 'Extra lesson' : key;
+  return (slot.p ? slot.p + ' · ' : '') + slot.s + '–' + slot.e;
 }
 function renderLessons(){
   const iso = $('#dateInput').value, slots = slotsFor(group, iso);
-  const opts = slots.map(x => `<option value="${x.s}">${x.s}–${x.e}</option>`);
+  const opts = slots.map(x => `<option value="${x.s}">${x.p ? x.p + ' · ' : ''}${x.s}–${x.e}</option>`);
   opts.push('<option value="extra">Extra lesson</option>');
   $('#lessonSelect').innerHTML = opts.join('');
   if(!slots.some(x=>x.s===lesson) && lesson!=='extra') lesson = slots.length ? slots[0].s : 'extra';
@@ -511,7 +535,7 @@ function renderRegister(){
   const g = GROUPS[group], date = $('#dateInput').value;
   $('#regTitle').innerHTML = g.label + ' Group' + (g.tag ? `<span class="tag">${g.tag}</span>` : '');
   $('#regMeta').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
-    ${g.teacher} · ${longDate(date)} · ${lessonLabel(group,date,lesson)}
+    ${g.teacher} · ${longDate(date)} · ${lessonLabel(group,date,lesson)}${(slotAt(group,date,lesson)||{}).r ? ' · Room ' + slotAt(group,date,lesson).r : ''}
     <button class="btn small" id="editSched" style="margin-left:6px">Edit schedule</button>`;
 
   $('#roster').innerHTML = g.students.map((name,i) => {
@@ -586,14 +610,16 @@ function openSched(){
 function slotRow(x){
   return `<div class="slot">
     <select>${DAYS.map((d,i)=>i>=1&&i<=6?`<option value="${i}" ${Number(x.d)===i?'selected':''}>${d}</option>`:'').join('')}</select>
-    <input type="time" value="${x.s}"><input type="time" value="${x.e}">
+    <input type="text" class="period" value="${esc(x.p||'')}" placeholder="Period" aria-label="Period">
+    <input type="time" value="${x.s}" aria-label="Start"><input type="time" value="${x.e}" aria-label="End">
+    <input type="text" class="room" value="${esc(x.r||'')}" placeholder="Room" aria-label="Room">
     <button type="button" class="delslot" aria-label="Remove lesson">×</button>
   </div>`;
 }
 document.addEventListener('click', e => {
   if(e.target.id === 'editSched') openSched();
   if(e.target.classList.contains('addslot')){
-    e.target.previousElementSibling.insertAdjacentHTML('beforeend', slotRow({d:1,s:'10:30',e:'11:30'}));
+    e.target.previousElementSibling.insertAdjacentHTML('beforeend', slotRow({d:1,p:'Period 3',s:'10:35',e:'11:30',r:''}));
   }
   if(e.target.classList.contains('delslot')) e.target.closest('.slot').remove();
 });
@@ -602,10 +628,13 @@ $('#schedOverlay').addEventListener('click', e => { if(e.target.id==='schedOverl
 $('#schedSave').addEventListener('click', () => {
   const next = {};
   document.querySelectorAll('.schedgroup').forEach(box => {
-    next[box.dataset.g] = [...box.querySelectorAll('.slot')].map(row => {
-      const [sel, a, b] = row.querySelectorAll('select,input');
-      return {d:Number(sel.value), s:a.value, e:b.value};
-    }).filter(x => x.s && x.e);
+    next[box.dataset.g] = [...box.querySelectorAll('.slot')].map(row => ({
+      d: Number(row.querySelector('select').value),
+      p: row.querySelector('.period').value.trim(),
+      s: row.querySelectorAll('input[type=time]')[0].value,
+      e: row.querySelectorAll('input[type=time]')[1].value,
+      r: row.querySelector('.room').value.trim()
+    })).filter(x => x.s && x.e).sort((a,b)=> a.d-b.d || a.s.localeCompare(b.s));
   });
   schedule = next; cacheSave();
   $('#schedOverlay').hidden = true;
@@ -714,8 +743,11 @@ document.querySelectorAll('.viewtab').forEach(tab => tab.addEventListener('click
   if(!API_URL){ setSync('offline','Local only — not shared'); return; }
   pull(); flush();
   setInterval(pull, PULL_SECONDS*1000);
-  window.addEventListener('focus', () => { flush(); pull(); });
-  window.addEventListener('online', () => { flush(); pull(); });
+  const refresh = () => { flush(); pull(); };
+  window.addEventListener('focus', refresh);
+  window.addEventListener('online', refresh);
+  window.addEventListener('pageshow', refresh);          // back button / restored tab
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) refresh(); });
 })();
 </script>
 </body>

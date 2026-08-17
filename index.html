@@ -281,7 +281,7 @@ footer .dept{margin-top:8px;font-family:'Newsreader',serif;font-size:14px;color:
       </div>
 
       <div class="field">
-        <label for="lessonSelect">Lesson</label>
+        <label for="lessonSelect">Time schedule</label>
         <div class="control">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
           <select id="lessonSelect"></select>
@@ -293,7 +293,7 @@ footer .dept{margin-top:8px;font-family:'Newsreader',serif;font-size:14px;color:
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 12 5 5L19 7"/></svg>
         Mark all present
       </button>
-      <button class="btn" id="clearDay">Clear this lesson</button>
+      <button class="btn" id="clearDay">Clear this time slot</button>
       <button class="btn" id="printBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V3h12v6M6 18H4v-6h16v6h-2M8 14h8v7H8z"/></svg>
         Print
@@ -357,8 +357,8 @@ footer .dept{margin-top:8px;font-family:'Newsreader',serif;font-size:14px;color:
 <div class="overlay" id="schedOverlay" hidden>
   <div class="card dialog" role="dialog" aria-modal="true" aria-labelledby="schedTitle">
     <header>
-      <h2 id="schedTitle">Lesson schedule</h2>
-      <p class="hint">Set the weekly lesson times for each group. Change them whenever the groups swap slots — records already taken are not affected.</p>
+      <h2 id="schedTitle">Time schedule</h2>
+      <p class="hint">Set the weekly time schedule for each group. Change them whenever the groups swap slots — records already taken are not affected.</p>
     </header>
     <div id="schedBody"></div>
     <div class="dialogfoot">
@@ -372,7 +372,7 @@ footer .dept{margin-top:8px;font-family:'Newsreader',serif;font-size:14px;color:
 /* ============================================================
    SETTINGS — paste your Apps Script Web App URL between the quotes
    ============================================================ */
-const API_URL = 'https://script.google.com/macros/s/AKfy…/exec';   // e.g. 'https://script.google.com/macros/s/AKfy.../exec'
+const API_URL = '';   // e.g. 'https://script.google.com/macros/s/AKfy.../exec'
 const PULL_SECONDS = 30;
 
 /* ---------------- rosters ---------------- */
@@ -495,13 +495,13 @@ function slotsFor(g, iso){
 function slotAt(g, iso, key){ return slotsFor(g,iso).find(x => x.s === key) || null; }
 function lessonLabel(g, iso, key){
   const slot = slotAt(g,iso,key);
-  if(!slot) return key === 'extra' ? 'Extra lesson' : key;
+  if(!slot) return key === 'extra' ? 'Other time' : key;
   return (slot.p ? slot.p + ' · ' : '') + slot.s + '–' + slot.e;
 }
 function renderLessons(){
   const iso = $('#dateInput').value, slots = slotsFor(group, iso);
   const opts = slots.map(x => `<option value="${x.s}">${x.p ? x.p + ' · ' : ''}${x.s}–${x.e}</option>`);
-  opts.push('<option value="extra">Extra lesson</option>');
+  opts.push('<option value="extra">Other time</option>');
   $('#lessonSelect').innerHTML = opts.join('');
   if(!slots.some(x=>x.s===lesson) && lesson!=='extra') lesson = slots.length ? slots[0].s : 'extra';
   $('#lessonSelect').value = lesson;
@@ -536,7 +536,7 @@ function renderRegister(){
   $('#regTitle').innerHTML = g.label + ' Group' + (g.tag ? `<span class="tag">${g.tag}</span>` : '');
   $('#regMeta').innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
     ${g.teacher} · ${longDate(date)} · ${lessonLabel(group,date,lesson)}${(slotAt(group,date,lesson)||{}).r ? ' · Room ' + slotAt(group,date,lesson).r : ''}
-    <button class="btn small" id="editSched" style="margin-left:6px">Edit schedule</button>`;
+    <button class="btn small" id="editSched" style="margin-left:6px">Edit time schedule</button>`;
 
   $('#roster').innerHTML = g.students.map((name,i) => {
     const r = rec(group,date,lesson,name);
@@ -603,7 +603,7 @@ function openSched(){
     <div class="schedgroup" data-g="${k}">
       <h3>${g.label} — ${g.teacher}</h3>
       <div class="slots">${(schedule[k]||[]).map(slotRow).join('')}</div>
-      <button class="btn small addslot" type="button">+ Add lesson</button>
+      <button class="btn small addslot" type="button">+ Add time</button>
     </div>`).join('');
   $('#schedOverlay').hidden = false;
 }
@@ -710,7 +710,7 @@ $('#resetRange').addEventListener('click', () => { $('#fromDate').value=''; $('#
 $('#printReport').addEventListener('click', () => window.print());
 $('#exportBtn').addEventListener('click', () => {
   const q = v => `"${String(v).replace(/"/g,'""')}"`;
-  const lines = ['Date,Lesson,Group,Teacher,Student,Status,Note'];
+  const lines = ['Date,Time,Group,Teacher,Student,Status,Note'];
   const gf = $('#groupFilter').value, sf = $('#studentFilter').value;
   (gf==='all'?Object.keys(GROUPS):[gf]).forEach(g =>
     sessions(g).forEach(([d,l]) => GROUPS[g].students.forEach(n => {

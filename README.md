@@ -2,8 +2,8 @@
 
 Shared attendance register for Cambridge 9709 option groups at SBS International School Chiangmai.
 
-- **Statistics Group** — Mrs. Cheng (15 students)
-- **Mechanics Group** — Ms. Hanna (15 students, also A Level Physics)
+- **Statistics Group** — Mrs. Cheng (17 students)
+- **Mechanics Group** — Ms. Hanna (13 students, also A Level Physics)
 
 ## Files
 
@@ -25,9 +25,9 @@ Shared attendance register for Cambridge 9709 option groups at SBS International
 
 Choose the date, group and lesson, then tap P, L, A or E for each student. Absent and excused open a reason box. The counters update as you mark, and marks upload to the sheet as you tap them.
 
-## Lesson schedule
+## Time schedule
 
-Set from **Edit schedule** on the register card. Default slots:
+Set from **Edit time schedule** on the register card. Default slots:
 
 Taken from the Y13MATC timetable (Secondary Sixth Form), six periods a week:
 
